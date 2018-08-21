@@ -28,7 +28,7 @@ package main
 
 import (
 	"fmt"
-	"math"
+	 "math"
 )
 
 func triangleNumber(index uint64) (sum uint64) {
@@ -36,85 +36,46 @@ func triangleNumber(index uint64) (sum uint64) {
 	return
 }
 
-func sieve(max uint64) (p []uint64) {
-	m := uint64(math.Sqrt(float64(max)))
-	n := uint64(float64(max)/math.Log(float64(max))) + m<<11
-	f := make([]bool,n)
-
-	for i := range f {
-		f[i]=true
-	}
-
-	for i := uint64(2); i <= m; i++ {
-		if f[i] {
-			x := uint64(1)
-			for j := i+i; j < max; j = i*2+i*x {
-				x++
-				f[j] = false
-			}
+func factor(n uint64, f chan int) {
+	for ff := uint64(2) ; ff < uint64(math.Sqrt(float64(n))) ; {
+		if n % ff == 0 {
+			f <- int(ff)
 		}
+		ff++
 	}
-
-	for i := range f {
-		if f[i] {
-			p = append(p, uint64(i))
-		}
-	}
-	return
+	close(f)
 }
 
-func factor(n uint64, p []uint64) (factors []int) {
-	b := n
-	fmt.Printf("Factorizing %d\n",n)
-	for i := uint64(2) ; i < b/2 ; {
-		if n % i == 0 {
-			factors = append(factors, int(i))
-			n /= i
-		} else {
-			i++ 
+func in(haystack []int, needle int) bool {
+	for i := range haystack {
+		if needle == haystack[i] {
+			return true
 		}
 	}
-
-	fmt.Println("second iteration, to break up larger factors")
-	nn := []int{}
-	for i := range factors {
-		f := factors[i]
-		bb := f
-		if f > 7 {
-			for j := 2; j < bb / 2 ; {
-				if f % j == 0 {
-					nn = append(nn,j)
-					f /= j
-				} else {
-					j++
-				}
-			}
-		} else {
-			nn = append(nn,f)
-		}
-	}
-
-	sum := uint64(0) 
-	for _, f := range nn {
-		if sum == uint64(0) {
-			sum = uint64(f)
-		} else {
-			sum *= uint64(f)
-		}
-	}
-
-	if sum != b {
-		fmt.Printf("incomplete/broken factorization!\n")
-		return []int{}
-	}
-	return
+	return false
 }
 
 func main() {
-	n := uint64(100)
-	factors := factor(triangleNumber(n),sieve(n))
-	for _,f := range factors {
-		fmt.Printf("%d ",f)
+	g := 101
+	for {
+		g++
+		factors := []int{}
+		n := triangleNumber(uint64(g))
+		fmt.Printf("\n)triangle(g:%d)->n:%d\n",g,n)
+		f := make(chan int)
+		go factor(n,f)
+		for {
+			ff, more := <-f
+			if more {
+				fmt.Printf("%d ",ff)
+				factors = append(factors, ff)
+			} else {
+				if len(factors) >= 500 {
+					fmt.Printf("\nWinner: triangle(%d)->%d\nFactors: %#v\n",g,n,factors)
+					return
+				}
+				break
+			}
+		}
 	}
-	fmt.Println("")
 }
